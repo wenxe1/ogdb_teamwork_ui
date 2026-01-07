@@ -66,7 +66,7 @@ public class CampusCardUI extends JFrame {
         // 模块A: 查询统计
         JPanel queryPanel = createModulePanel("查询与统计", rightPanel);
         addButton(queryPanel, "查询某用户卡片及余额", e -> promptQueryUserBalance());
-        addButton(queryPanel, "查询某卡消费流水", e -> promptQueryConsumption());
+        addButton(queryPanel, "查询某卡消费/充值流水", e -> promptQueryCardFlow());
         addButton(queryPanel, "查询所有营业商户", e -> {
             String sql = "SELECT * FROM campus_card.merchant WHERE business_status = '营业'";
             sqlArea.setText(sql);
@@ -140,17 +140,32 @@ public class CampusCardUI extends JFrame {
         }
     }
 
-    // 2. 查询消费流水
-    private void promptQueryConsumption() {
-        String cardNo = JOptionPane.showInputDialog(this, "请输入卡号 (例如: CARD001):", "CARD001");
-        if (cardNo != null) {
-            String sql = String.format(
-                    "SELECT cons.consumption_id, m.merchant_name, cons.consumption_amount, cons.consumption_time " +
-                            "FROM campus_card.consumption cons " +
-                            "JOIN campus_card.merchant m ON cons.merchant_id = m.merchant_id " +
-                            "WHERE cons.card_no = '%s' ORDER BY cons.consumption_time DESC;", cardNo);
-            sqlArea.setText(sql);
-            runQuery(sql);
+    private void promptQueryCardFlow() {
+        JTextField cardField = new JTextField("CARD001");
+        JComboBox<String> typeBox = new JComboBox<>(new String[]{"消费流水", "充值流水"});
+        JPanel p = new JPanel(new GridLayout(0, 1));
+        p.add(new JLabel("卡号:"));
+        p.add(cardField);
+        p.add(new JLabel("类型:"));
+        p.add(typeBox);
+        int res = JOptionPane.showConfirmDialog(this, p, "查询卡流水", JOptionPane.OK_CANCEL_OPTION);
+        if (res == JOptionPane.OK_OPTION) {
+            String cardNo = cardField.getText().trim();
+            String type = (String) typeBox.getSelectedItem();
+            if ("消费流水".equals(type)) {
+                String sql = "SELECT cons.consumption_id, m.merchant_name, cons.consumption_amount, cons.consumption_time " +
+                        "FROM campus_card.consumption cons " +
+                        "JOIN campus_card.merchant m ON cons.merchant_id = m.merchant_id " +
+                        "WHERE cons.card_no = ? ORDER BY cons.consumption_time DESC";
+                sqlArea.setText(sql.replace("?", "'" + cardNo + "'"));
+                runQueryParams(sql, new Object[]{cardNo});
+            } else {
+                String sql = "SELECT r.recharge_id, r.recharge_amount, r.recharge_time " +
+                        "FROM campus_card.recharge r " +
+                        "WHERE r.card_no = ? ORDER BY r.recharge_time DESC";
+                sqlArea.setText(sql.replace("?", "'" + cardNo + "'"));
+                runQueryParams(sql, new Object[]{cardNo});
+            }
         }
     }
 
@@ -260,6 +275,22 @@ public class CampusCardUI extends JFrame {
             statusLabel.setText(" " + msg);
             JOptionPane.showMessageDialog(this, msg);
         }
+    }
+
+    private void runQueryParams(String sql, Object[] params) {
+        statusLabel.setText(" 正在查询...");
+        new Thread(() -> {
+            DBUtil.QueryResult res = DBUtil.executeQueryParams(sql, params);
+            SwingUtilities.invokeLater(() -> {
+                if (res.errorMsg != null) {
+                    statusLabel.setText(" 查询出错");
+                    JOptionPane.showMessageDialog(this, res.errorMsg, "Database Error", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    tableModel.setDataVector(res.data, res.columnNames);
+                    statusLabel.setText(" 查询完成 | 记录数: " + res.data.size());
+                }
+            });
+        }).start();
     }
 
     public static void main(String[] args) {

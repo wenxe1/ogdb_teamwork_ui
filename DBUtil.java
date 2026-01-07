@@ -57,6 +57,35 @@ public class DBUtil {
         return new QueryResult(columnNames, data, errorMsg);
     }
 
+    public static QueryResult executeQueryParams(String sql, Object... params) {
+        Vector<String> columnNames = new Vector<>();
+        Vector<Vector<Object>> data = new Vector<>();
+        String errorMsg = null;
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+                for (int i = 1; i <= columnCount; i++) {
+                    columnNames.add(metaData.getColumnName(i));
+                }
+                while (rs.next()) {
+                    Vector<Object> row = new Vector<>();
+                    for (int i = 1; i <= columnCount; i++) {
+                        row.add(rs.getObject(i));
+                    }
+                    data.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            errorMsg = "SQL错误: " + e.getMessage();
+        }
+        return new QueryResult(columnNames, data, errorMsg);
+    }
+
     /**
      * 执行更新 (INSERT, UPDATE, DELETE, TRANSACTION)
      */
