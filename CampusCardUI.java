@@ -24,7 +24,7 @@ public class CampusCardUI extends JFrame {
         sqlArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
         sqlArea.setText("-- 此处将显示系统自动生成的 SQL 语句，也可以手动输入执行");
 
-        JButton runBtn = new JButton("执行 SQL");
+        JButton runBtn = new JButton("执行SQL");
         runBtn.setBackground(new Color(70, 130, 180));
         runBtn.setForeground(Color.WHITE);
         runBtn.addActionListener(e -> executeCustomSQL());
@@ -95,47 +95,30 @@ public class CampusCardUI extends JFrame {
         // 删除“查询与统计/商户管理”模块与其中特定按钮，保留其它模块
 
         JPanel labViewPanel = createModulePanel("视图操作", rightPanel);
-        addButton(labViewPanel, "创建视图 user_card_info", e -> {
+        addButton(labViewPanel, "创建视图user_card_info", e -> {
             String sql = "CREATE VIEW campus_card.user_card_info AS " +
                     "SELECT u.user_id, u.user_name, u.user_type, c.card_no, c.card_status, c.card_balance, c.issue_time " +
                     "FROM campus_card.users u JOIN campus_card.card c ON u.user_id = c.user_id;";
             runUpdateScript(sql);
         });
-        addButton(labViewPanel, "修改视图 user_card_info", e -> {
-            String sql = "CREATE OR REPLACE VIEW campus_card.user_card_info AS " +
-                    "SELECT u.user_id, u.user_name, u.user_type, c.card_no, c.card_status, c.card_balance, c.issue_time " +
-                    "FROM campus_card.users u JOIN campus_card.card c ON u.user_id = c.user_id;";
+        addButton(labViewPanel, "删除视图user_card_info", e -> {
+            String sql = "DROP VIEW IF EXISTS campus_card.user_card_info;";
             runUpdateScript(sql);
         });
         addButton(labViewPanel, "视图查询示例", e -> {
-            String sql = "SELECT user_name, card_no, card_status FROM campus_card.user_card_info LIMIT 10";
+            String sql = "SELECT user_name, user_type, card_no, card_status, card_balance, issue_time " +
+                    "FROM campus_card.user_card_info ORDER BY issue_time DESC LIMIT 10";
             sqlArea.setText(sql);
             runQuery(sql);
         });
-        addButton(labViewPanel, "重命名视图", e -> {
-            String sql = "ALTER VIEW campus_card.user_card_info RENAME TO user_card_relation;";
-            runUpdateScript(sql);
-        });
-        addButton(labViewPanel, "删除视图", e -> {
-            String sql = "DROP VIEW IF EXISTS campus_card.user_card_relation;";
-            runUpdateScript(sql);
-        });
 
         JPanel labIdxPanel = createModulePanel("索引操作", rightPanel);
-        addButton(labIdxPanel, "创建索引 idx_card_no", e -> {
+        addButton(labIdxPanel, "创建索引idx_card_no", e -> {
             String sql = "CREATE UNIQUE INDEX idx_card_no ON campus_card.card(card_no);";
             runUpdateScript(sql);
         });
-        addButton(labIdxPanel, "重建索引 idx_card_no", e -> {
-            String sql = "REINDEX INDEX idx_card_no;";
-            runUpdateScript(sql);
-        });
-        addButton(labIdxPanel, "重命名索引", e -> {
-            String sql = "ALTER INDEX idx_card_no RENAME TO idx_card_no_v2;";
-            runUpdateScript(sql);
-        });
-        addButton(labIdxPanel, "删除索引", e -> {
-            String sql = "DROP INDEX IF EXISTS idx_card_no_v2;";
+        addButton(labIdxPanel, "删除索引idx_card_no", e -> {
+            String sql = "DROP INDEX IF EXISTS idx_card_no;";
             runUpdateScript(sql);
         });
 

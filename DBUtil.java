@@ -6,8 +6,8 @@ public class DBUtil {
     static final String JDBC_DRIVER = "org.postgresql.Driver";
     // 请确保 IP:端口 正确，且云服务器安全组已放行 26000
     static final String DB_URL = "jdbc:postgresql://120.46.20.99:26000/campus_card?ApplicationName=app1";
-    static final String USER = "card_user";
-    static final String PASS = "Gauss#3campus";
+    static final String USER = "admin";
+    static final String PASS = "Admin@123";
 
     static {
         try {
