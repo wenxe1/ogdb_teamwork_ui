@@ -57,21 +57,36 @@ public class CampusCardUI extends JFrame {
             leftPanel.add(Box.createVerticalStrut(10));
         }
         JPanel labUserPanelLeft = createModulePanel("用户操作", leftPanel);
-        addButton(labUserPanelLeft, "创建并授权用户 card_user", e -> {
-            String script = String.join(";",
-                    "CREATE USER card_user IDENTIFIED BY 'Gauss#3campus'",
-                    "GRANT CONNECT ON DATABASE campus_card TO card_user",
-                    "GRANT USAGE ON SCHEMA campus_card TO card_user",
-                    "GRANT SELECT ON campus_card.card TO card_user",
-                    "GRANT SELECT ON campus_card.consumption TO card_user"
-            ) + ";";
-            runAdminScript(script);
+        addButton(labUserPanelLeft, "创建用户", e -> {
+            JTextField userField = new JTextField("card_user");
+            JPasswordField passField = new JPasswordField("Test@123");
+            JPanel p = new JPanel(new GridLayout(0, 1));
+            p.add(new JLabel("用户名:"));
+            p.add(userField);
+            p.add(new JLabel("密码:"));
+            p.add(passField);
+            int res = JOptionPane.showConfirmDialog(this, p, "创建用户", JOptionPane.OK_CANCEL_OPTION);
+            if (res == JOptionPane.OK_OPTION) {
+                String username = userField.getText().trim();
+                String password = new String(passField.getPassword());
+                if (username.length() > 0 && password.length() > 0) {
+                    String script = "CREATE USER " + username + " IDENTIFIED BY '" + password + "';";
+                    runAdminScript(script);
+                }
+            }
         });
-        addButton(labUserPanelLeft, "删除 campus_card 模式", e -> {
-            int c = JOptionPane.showConfirmDialog(this, "确认删除模式 campus_card 及其所有对象？", "危险操作", JOptionPane.OK_CANCEL_OPTION);
-            if (c == JOptionPane.OK_OPTION) {
-                String sql = "DROP SCHEMA campus_card CASCADE;";
-                runAdminScript(sql);
+        addButton(labUserPanelLeft, "授权", e -> {
+            String username = JOptionPane.showInputDialog(this, "输入授权用户:", "card_user");
+            if (username != null && !username.trim().isEmpty()) {
+                String script = String.join(";",
+                        "GRANT CONNECT ON DATABASE campus_card TO " + username,
+                        "GRANT USAGE ON SCHEMA campus_card TO " + username,
+                        "GRANT SELECT ON campus_card.card TO " + username,
+                        "GRANT SELECT ON campus_card.consumption TO " + username,
+                        "GRANT SELECT ON campus_card.recharge TO " + username,
+                        "GRANT SELECT ON campus_card.merchant TO " + username
+                ) + ";";
+                runAdminScript(script);
             }
         });
 
@@ -85,12 +100,12 @@ public class CampusCardUI extends JFrame {
         JPanel basicPanel = createModulePanel("基础操作", rightPanel);
         addButton(basicPanel, "查询某用户卡片及余额", e -> promptQueryUserBalance());
         addButton(basicPanel, "查询某卡消费/充值流水", e -> promptQueryCardFlow());
-        addButton(basicPanel, "设置商户 停业/营业", e -> promptUpdateMerchantStatus());
+        addButton(basicPanel, "设置商户停业/营业", e -> promptUpdateMerchantStatus());
 
         // 模块B: 业务办理 (事务)
         JPanel transPanel = createModulePanel("业务办理 (事务演示)", rightPanel);
-        addButton(transPanel, "[模拟] 一卡通充值", e -> promptRecharge());
-        addButton(transPanel, "[模拟] 刷卡消费", e -> promptConsumption());
+        addButton(transPanel, "一卡通充值[模拟]", e -> promptRecharge());
+        addButton(transPanel, "刷卡消费[模拟]", e -> promptConsumption());
 
         // 删除“查询与统计/商户管理”模块与其中特定按钮，保留其它模块
 

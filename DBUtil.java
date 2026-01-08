@@ -122,8 +122,8 @@ public class DBUtil {
     }
 
     public static String executeBatchAdmin(String sqlScript) {
-        String adminUser = System.getenv("OG_ADMIN_USER");
-        String adminPass = System.getenv("OG_ADMIN_PASS");
+        String adminUser = "admin";
+        String adminPass = "Admin@123";
         if (adminUser == null || adminPass == null) {
             return "执行失败: 未配置管理员凭据 OG_ADMIN_USER/OG_ADMIN_PASS";
         }
