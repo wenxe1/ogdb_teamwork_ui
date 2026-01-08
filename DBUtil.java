@@ -103,6 +103,47 @@ public class DBUtil {
         }
     }
 
+    public static String executeBatch(String sqlScript) {
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            String[] parts = sqlScript.split(";");
+            int count = 0;
+            for (String p : parts) {
+                String s = p.trim();
+                if (s.isEmpty()) continue;
+                stmt.execute(s);
+                count++;
+            }
+            return "执行成功，语句数: " + count;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "执行失败: " + e.getMessage();
+        }
+    }
+
+    public static String executeBatchAdmin(String sqlScript) {
+        String adminUser = System.getenv("OG_ADMIN_USER");
+        String adminPass = System.getenv("OG_ADMIN_PASS");
+        if (adminUser == null || adminPass == null) {
+            return "执行失败: 未配置管理员凭据 OG_ADMIN_USER/OG_ADMIN_PASS";
+        }
+        try (Connection conn = DriverManager.getConnection(DB_URL, adminUser, adminPass);
+             Statement stmt = conn.createStatement()) {
+            String[] parts = sqlScript.split(";");
+            int count = 0;
+            for (String p : parts) {
+                String s = p.trim();
+                if (s.isEmpty()) continue;
+                stmt.execute(s);
+                count++;
+            }
+            return "执行成功，语句数: " + count;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "执行失败: " + e.getMessage();
+        }
+    }
+
     public static class QueryResult {
         public Vector<String> columnNames;
         public Vector<Vector<Object>> data;

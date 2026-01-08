@@ -11,20 +11,20 @@ public class CampusCardUI extends JFrame {
     private JLabel statusLabel;
 
     public CampusCardUI() {
-        setTitle("校园一卡通管理系统 (数据库大作业演示)");
+        setTitle("校园一卡通管理系统");
         setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
         // --- 1. 顶部：SQL 监视器 (显示生成的 SQL) ---
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
-        topPanel.setBorder(BorderFactory.createTitledBorder("SQL 执行监视器 (只读/手动)"));
+        topPanel.setBorder(BorderFactory.createTitledBorder("SQL执行监视器"));
 
         sqlArea = new JTextArea(5, 60);
         sqlArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
         sqlArea.setText("-- 此处将显示系统自动生成的 SQL 语句，也可以手动输入执行");
 
-        JButton runBtn = new JButton("手动执行 SQL");
+        JButton runBtn = new JButton("执行 SQL");
         runBtn.setBackground(new Color(70, 130, 180));
         runBtn.setForeground(Color.WHITE);
         runBtn.addActionListener(e -> executeCustomSQL());
@@ -35,7 +35,7 @@ public class CampusCardUI extends JFrame {
         // --- 2. 左侧：基础表查看 ---
         JPanel leftPanel = new JPanel();
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-        leftPanel.setBorder(BorderFactory.createTitledBorder("基础数据浏览"));
+        leftPanel.setBorder(BorderFactory.createTitledBorder("表数据浏览"));
         leftPanel.setPreferredSize(new Dimension(160, 0));
 
         String[] tables = {"users", "card", "merchant", "consumption", "recharge"};
@@ -56,6 +56,24 @@ public class CampusCardUI extends JFrame {
             leftPanel.add(btn);
             leftPanel.add(Box.createVerticalStrut(10));
         }
+        JPanel labUserPanelLeft = createModulePanel("用户操作", leftPanel);
+        addButton(labUserPanelLeft, "创建并授权用户 card_user", e -> {
+            String script = String.join(";",
+                    "CREATE USER card_user IDENTIFIED BY 'Gauss#3campus'",
+                    "GRANT CONNECT ON DATABASE campus_card TO card_user",
+                    "GRANT USAGE ON SCHEMA campus_card TO card_user",
+                    "GRANT SELECT ON campus_card.card TO card_user",
+                    "GRANT SELECT ON campus_card.consumption TO card_user"
+            ) + ";";
+            runAdminScript(script);
+        });
+        addButton(labUserPanelLeft, "删除 campus_card 模式", e -> {
+            int c = JOptionPane.showConfirmDialog(this, "确认删除模式 campus_card 及其所有对象？", "危险操作", JOptionPane.OK_CANCEL_OPTION);
+            if (c == JOptionPane.OK_OPTION) {
+                String sql = "DROP SCHEMA campus_card CASCADE;";
+                runAdminScript(sql);
+            }
+        });
 
         // --- 3. 右侧：功能业务模块 (核心修改部分) ---
         JPanel rightPanel = new JPanel();
@@ -63,30 +81,64 @@ public class CampusCardUI extends JFrame {
         rightPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         rightPanel.setPreferredSize(new Dimension(260, 0));
 
-        // 模块A: 查询统计
-        JPanel queryPanel = createModulePanel("查询与统计", rightPanel);
-        addButton(queryPanel, "查询某用户卡片及余额", e -> promptQueryUserBalance());
-        addButton(queryPanel, "查询某卡消费/充值流水", e -> promptQueryCardFlow());
-        addButton(queryPanel, "查询所有营业商户", e -> {
-            String sql = "SELECT * FROM campus_card.merchant WHERE business_status = '营业'";
-            sqlArea.setText(sql);
-            runQuery(sql);
-        });
+        // 模块A: 基础操作（合并原查询与统计/商户管理的指定功能）
+        JPanel basicPanel = createModulePanel("基础操作", rightPanel);
+        addButton(basicPanel, "查询某用户卡片及余额", e -> promptQueryUserBalance());
+        addButton(basicPanel, "查询某卡消费/充值流水", e -> promptQueryCardFlow());
+        addButton(basicPanel, "设置商户 停业/营业", e -> promptUpdateMerchantStatus());
 
         // 模块B: 业务办理 (事务)
         JPanel transPanel = createModulePanel("业务办理 (事务演示)", rightPanel);
         addButton(transPanel, "[模拟] 一卡通充值", e -> promptRecharge());
         addButton(transPanel, "[模拟] 刷卡消费", e -> promptConsumption());
 
-        // 模块C: 管理功能
-        JPanel adminPanel = createModulePanel("商户管理", rightPanel);
-        addButton(adminPanel, "设置商户 停业/营业", e -> promptUpdateMerchantStatus());
-        addButton(adminPanel, "大额消费预警 (>平均值)", e -> {
-            String sql = "SELECT * FROM campus_card.consumption WHERE consumption_amount > " +
-                    "(SELECT AVG(consumption_amount) FROM campus_card.consumption)";
+        // 删除“查询与统计/商户管理”模块与其中特定按钮，保留其它模块
+
+        JPanel labViewPanel = createModulePanel("视图操作", rightPanel);
+        addButton(labViewPanel, "创建视图 user_card_info", e -> {
+            String sql = "CREATE VIEW campus_card.user_card_info AS " +
+                    "SELECT u.user_id, u.user_name, u.user_type, c.card_no, c.card_status, c.card_balance, c.issue_time " +
+                    "FROM campus_card.users u JOIN campus_card.card c ON u.user_id = c.user_id;";
+            runUpdateScript(sql);
+        });
+        addButton(labViewPanel, "修改视图 user_card_info", e -> {
+            String sql = "CREATE OR REPLACE VIEW campus_card.user_card_info AS " +
+                    "SELECT u.user_id, u.user_name, u.user_type, c.card_no, c.card_status, c.card_balance, c.issue_time " +
+                    "FROM campus_card.users u JOIN campus_card.card c ON u.user_id = c.user_id;";
+            runUpdateScript(sql);
+        });
+        addButton(labViewPanel, "视图查询示例", e -> {
+            String sql = "SELECT user_name, card_no, card_status FROM campus_card.user_card_info LIMIT 10";
             sqlArea.setText(sql);
             runQuery(sql);
         });
+        addButton(labViewPanel, "重命名视图", e -> {
+            String sql = "ALTER VIEW campus_card.user_card_info RENAME TO user_card_relation;";
+            runUpdateScript(sql);
+        });
+        addButton(labViewPanel, "删除视图", e -> {
+            String sql = "DROP VIEW IF EXISTS campus_card.user_card_relation;";
+            runUpdateScript(sql);
+        });
+
+        JPanel labIdxPanel = createModulePanel("索引操作", rightPanel);
+        addButton(labIdxPanel, "创建索引 idx_card_no", e -> {
+            String sql = "CREATE UNIQUE INDEX idx_card_no ON campus_card.card(card_no);";
+            runUpdateScript(sql);
+        });
+        addButton(labIdxPanel, "重建索引 idx_card_no", e -> {
+            String sql = "REINDEX INDEX idx_card_no;";
+            runUpdateScript(sql);
+        });
+        addButton(labIdxPanel, "重命名索引", e -> {
+            String sql = "ALTER INDEX idx_card_no RENAME TO idx_card_no_v2;";
+            runUpdateScript(sql);
+        });
+        addButton(labIdxPanel, "删除索引", e -> {
+            String sql = "DROP INDEX IF EXISTS idx_card_no_v2;";
+            runUpdateScript(sql);
+        });
+
 
         // --- 4. 中间：结果表格 ---
         tableModel = new DefaultTableModel();
@@ -274,6 +326,26 @@ public class CampusCardUI extends JFrame {
             String msg = DBUtil.executeUpdate(sql);
             statusLabel.setText(" " + msg);
             JOptionPane.showMessageDialog(this, msg);
+        }
+    }
+
+    private void runUpdateScript(String script) {
+        sqlArea.setText(script);
+        String msg = DBUtil.executeBatch(script);
+        if (msg.startsWith("执行成功")) {
+            JOptionPane.showMessageDialog(this, msg);
+        } else {
+            JOptionPane.showMessageDialog(this, msg, "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void runAdminScript(String script) {
+        sqlArea.setText(script);
+        String msg = DBUtil.executeBatchAdmin(script);
+        if (msg.startsWith("执行成功")) {
+            JOptionPane.showMessageDialog(this, msg);
+        } else {
+            JOptionPane.showMessageDialog(this, msg, "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
 
