@@ -1,7 +1,7 @@
 import java.sql.*;
 import java.util.Vector;
 
-public class DBUtil {
+public class DBUtilDemo {
     // --- 数据库连接配置 ---
     static final String JDBC_DRIVER = "org.postgresql.Driver";
     static final String DB_URL = "jdbc:postgresql://120.46.20.99:26000/campus_card?ApplicationName=app1";
@@ -152,6 +152,19 @@ public class DBUtil {
             this.columnNames = c;
             this.data = d;
             this.errorMsg = e;
+        }
+    }
+
+    public static void main(String[] args) {
+        String sql = "SELECT * FROM campus_card.users ORDER BY 1 LIMIT 10;";
+        QueryResult qr = executeQuery(sql);
+        if (qr.errorMsg != null) {
+            System.out.println("查询失败: " + qr.errorMsg);
+        } else {
+            System.out.println("查询成功, 行数: " + qr.data.size() + ", 列数: " + qr.columnNames.size());
+            for (int i = 0; i < qr.data.size(); i++) {
+                System.out.println(qr.data.get(i));
+            }
         }
     }
 }

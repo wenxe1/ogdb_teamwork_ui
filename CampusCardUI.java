@@ -16,13 +16,13 @@ public class CampusCardUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // --- 1. 顶部：SQL 监视器 (显示生成的 SQL) ---
+        // 顶部：SQL 监视器 (显示生成的 SQL) 
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
         topPanel.setBorder(BorderFactory.createTitledBorder("SQL执行监视器"));
 
         sqlArea = new JTextArea(5, 60);
         sqlArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        sqlArea.setText("-- 此处将显示系统自动生成的 SQL 语句，也可以手动输入执行");
+        sqlArea.setText("此处将显示系统自动生成的 SQL 语句，也可以手动输入执行");
 
         JButton runBtn = new JButton("执行SQL");
         runBtn.setBackground(new Color(70, 130, 180));
@@ -32,7 +32,7 @@ public class CampusCardUI extends JFrame {
         topPanel.add(new JScrollPane(sqlArea), BorderLayout.CENTER);
         topPanel.add(runBtn, BorderLayout.EAST);
 
-        // --- 2. 左侧：基础表查看 ---
+        // 左侧：基础表查看 ---
         JPanel leftPanel = new JPanel();
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBorder(BorderFactory.createTitledBorder("表数据浏览"));
@@ -90,24 +90,22 @@ public class CampusCardUI extends JFrame {
             }
         });
 
-        // --- 3. 右侧：功能业务模块 (核心修改部分) ---
+        // 右侧：功能业务模块 ---
         JPanel rightPanel = new JPanel();
         rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
         rightPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         rightPanel.setPreferredSize(new Dimension(260, 0));
 
-        // 模块A: 基础操作（合并原查询与统计/商户管理的指定功能）
+        // 模块: 基础操作（合并原查询与统计/商户管理的指定功能）
         JPanel basicPanel = createModulePanel("基础操作", rightPanel);
         addButton(basicPanel, "查询某用户卡片及余额", e -> promptQueryUserBalance());
         addButton(basicPanel, "查询某卡消费/充值流水", e -> promptQueryCardFlow());
         addButton(basicPanel, "设置商户停业/营业", e -> promptUpdateMerchantStatus());
 
-        // 模块B: 业务办理 (事务)
+        // 模块: 业务办理 (事务)
         JPanel transPanel = createModulePanel("业务办理 (事务演示)", rightPanel);
         addButton(transPanel, "一卡通充值[模拟]", e -> promptRecharge());
         addButton(transPanel, "刷卡消费[模拟]", e -> promptConsumption());
-
-        // 删除“查询与统计/商户管理”模块与其中特定按钮，保留其它模块
 
         JPanel labViewPanel = createModulePanel("视图操作", rightPanel);
         addButton(labViewPanel, "创建视图user_card_info", e -> {
@@ -129,23 +127,23 @@ public class CampusCardUI extends JFrame {
 
         JPanel labIdxPanel = createModulePanel("索引操作", rightPanel);
         addButton(labIdxPanel, "创建索引idx_card_no", e -> {
-            String sql = "CREATE UNIQUE INDEX idx_card_no ON campus_card.card(card_no);";
+            String sql = "CREATE UNIQUE INDEX IF NOT EXISTS campus_card.idx_card_no ON campus_card.card(card_no);";
             runUpdateScript(sql);
         });
         addButton(labIdxPanel, "删除索引idx_card_no", e -> {
-            String sql = "DROP INDEX IF EXISTS idx_card_no;";
+            String sql = "DROP INDEX IF EXISTS campus_card.idx_card_no;";
             runUpdateScript(sql);
         });
 
 
-        // --- 4. 中间：结果表格 ---
+        // 中间：结果表格
         tableModel = new DefaultTableModel();
         resultTable = new JTable(tableModel);
         resultTable.setRowHeight(24);
         resultTable.setFont(new Font("SansSerif", Font.PLAIN, 13));
         JScrollPane scrollPane = new JScrollPane(resultTable);
 
-        // --- 5. 底部：状态栏 ---
+        // 底部：状态栏
         statusLabel = new JLabel(" 系统就绪 | 数据库: campus_card | 模式: 演示模式");
         statusLabel.setBorder(BorderFactory.createEtchedBorder());
 
@@ -157,7 +155,7 @@ public class CampusCardUI extends JFrame {
         add(statusLabel, BorderLayout.SOUTH);
     }
 
-    // --- 辅助方法：创建右侧功能模块 ---
+    // 创建右侧功能模块
     private JPanel createModulePanel(String title, JPanel parent) {
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(0, 1, 5, 5)); // 垂直网格布局
@@ -174,9 +172,8 @@ public class CampusCardUI extends JFrame {
         panel.add(btn);
     }
 
-    // --- 业务逻辑具体实现 ---
-
-    // 1. 查询用户余额 (多表连接)
+    // 业务逻辑具体实现
+    // 查询用户余额 (多表连接)
     private void promptQueryUserBalance() {
         String name = JOptionPane.showInputDialog(this, "请输入用户姓名 (例如: 张三):");
         if (name != null && !name.trim().isEmpty()) {
@@ -219,7 +216,7 @@ public class CampusCardUI extends JFrame {
         }
     }
 
-    // 3. 模拟充值 (事务：插入记录 + 更新余额)
+    // 模拟充值 (事务：插入记录 + 更新余额)
     private void promptRecharge() {
         String cardNo = JOptionPane.showInputDialog(this, "请输入充值卡号:", "CARD001");
         String amountStr = JOptionPane.showInputDialog(this, "请输入充值金额:", "100");
@@ -243,7 +240,7 @@ public class CampusCardUI extends JFrame {
         }
     }
 
-    // 4. 模拟消费 (事务：插入记录 + 扣减余额)
+    // 模拟消费 (事务：插入记录 + 扣减余额)
     private void promptConsumption() {
         JTextField cardField = new JTextField("CARD001");
         JTextField merchField = new JTextField("1"); // 假设商户ID为1
@@ -278,7 +275,7 @@ public class CampusCardUI extends JFrame {
         }
     }
 
-    // 5. 更新商户状态
+    // 更新商户状态
     private void promptUpdateMerchantStatus() {
         String mId = JOptionPane.showInputDialog(this, "输入商户ID:", "1");
         if (mId == null) return;
@@ -296,8 +293,7 @@ public class CampusCardUI extends JFrame {
         runQuery("SELECT * FROM campus_card.merchant WHERE merchant_id = " + mId);
     }
 
-    // --- 核心执行方法 ---
-
+    // 执行方法
     private void runQuery(String sql) {
         statusLabel.setText(" 正在查询...");
         new Thread(() -> {
@@ -363,6 +359,7 @@ public class CampusCardUI extends JFrame {
         }).start();
     }
 
+    // 主入口
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
